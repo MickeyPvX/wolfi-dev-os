@@ -73,11 +73,11 @@ subpackages:
 
 test:
   environment:
-    environment:
-      GEM_HOME: /usr/local/bundle
     contents:
       packages:
         - ${{package.name}}-compat
+    environment:
+      GEM_HOME: /usr/local/bundle
   pipeline:
     - name: Test installation
       runs: rails --version
