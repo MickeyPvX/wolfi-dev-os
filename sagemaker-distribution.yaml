@@ -1,0 +1,38 @@
+package:
+  name: sagemaker-distribution
+  version: 2.4.1
+  epoch: 0
+  description: A set of Docker images that include popular frameworks for machine learning, data science and visualization.
+  copyright:
+    - license: Apache-2.0
+
+vars:
+  python-version: 3.11
+
+environment:
+  contents:
+    packages:
+      - busybox
+      - conda
+      - python${{vars.python-version}}
+      - py${{vars.python-version}}-altair
+      - py${{vars.python-version}}-jinja2
+      - py${{vars.python-version}}-numpy
+      - py${{vars.python-version}}-pandas
+      - py${{vars.python-version}}-pytorch
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/aws/sagemaker-distribution
+      tag: ${{package.version}}-cpu
+      expected-commit: ad3c21b961d6fc637347a4218f92302ac281d8a7
+
+update:
+  enabled: true
+  github:
+    identifier: aws/sagemaker-distribution
+    tag-filter: -cpu
+
+test:
+  environment:
