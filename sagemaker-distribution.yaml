@@ -14,9 +14,11 @@ environment:
     packages:
       - busybox
       - conda
-      - python${{vars.python-version}}
       - py${{vars.python-version}}-altair
+      - py${{vars.python-version}}-boto3
+      - py${{vars.python-version}}-ipython
       - py${{vars.python-version}}-jinja2
+      - py${{vars.python-version}}-jupyter-lsp
       - py${{vars.python-version}}-numpy
       - py${{vars.python-version}}-pandas
       - py${{vars.python-version}}-pytorch
