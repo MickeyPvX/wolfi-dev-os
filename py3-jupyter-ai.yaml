@@ -1,0 +1,91 @@
+package:
+  name: py3-jupyter-ai
+  version: 2.31.2
+  epoch: 0
+  description: A generative AI extension for JupyterLab
+  annotations:
+    cgr.dev/ecosystem: python
+  copyright:
+    - license: BSD-3-Clause
+  dependencies:
+    provider-priority: 0
+
+vars:
+  pypi-package: jupyter-ai
+  import: jupyter_ai
+
+data:
+  - name: py-versions
+    items:
+      3.10: '310'
+      3.11: '311'
+      3.12: '312'
+      3.13: '313'
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - make
+      - py3-supported-build-base
+      - py3-supported-hatch-jupyter-builder
+      - py3-supported-hatch-nodejs-version
+      - py3-supported-hatchling
+      - py3-supported-jupyterlab
+
+pipeline:
+  - uses: git-checkout
+    with:
+      expected-commit: 9033a1c52b5c041fb868fd039347fe1b712540a5
+      repository: https://github.com/jupyterlab/jupyter-ai
+      tag: v${{package.version}}
+
+subpackages:
+  - range: py-versions
+    name: py${{range.key}}-${{vars.pypi-package}}
+    description: python${{range.key}} version of ${{vars.pypi-package}}
+    dependencies:
+      runtime:
+        - py${{range.key}}-dask-distributed   # Need to build
+        - py${{range.key}}-deepmerge          # Need to build
+        - py${{range.key}}-faiss-cpu          # Need to build
+        - py${{range.key}}-importlib-metadata
+        - py${{range.key}}-jupyter-ai-magics  # Need to build
+        - py${{range.key}}-jupyter-server
+        - py${{range.key}}-jupyterlab-chat    # Need to build
+        - py${{range.key}}-pydantic
+        - py${{range.key}}-traitlets
+    pipeline:
+      - runs: apk add py${{range.key}}-jupyterlab-bin py${{range.key}}-jupyter-core-bin
+      - uses: py/pip-build-install
+        working-directory: packages/jupyter-ai
+        with:
+          needs-exe-named-python3: true
+          python: python${{range.key}}
+      - runs: apk del py${{range.key}}-jupyterlab-bin py${{range.key}}-jupyter-core-bin
+      - uses: strip
+    test:
+      pipeline:
+        - uses: python/import
+          with:
+            python: python${{range.key}}
+            import: ${{vars.import}}
+
+  - name: py3-supported-${{vars.pypi-package}}
+    description: meta package providing ${{vars.pypi-package}} for supported python versions.
+    dependencies:
+      runtime:
+        - py3.10-${{vars.pypi-package}}
+        - py3.11-${{vars.pypi-package}}
+        - py3.12-${{vars.pypi-package}}
+        - py3.13-${{vars.pypi-package}}
+
+update:
+  enabled: true
+  ignore-regex-patterns:
+    - alpha[0-9]*$
+    - beta[0-9]*$
+  github:
+    identifier: jupyterlab/jupyter-ai
+    strip-prefix: v
+    tag-filter: v
