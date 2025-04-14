@@ -25,6 +25,9 @@ data:
 environment:
   contents:
     packages:
+      - bash
+      - build-base
+      - make
       - py3-supported-build-base
       - py3-supported-hatch-jupyter-builder
       - py3-supported-hatchling
@@ -40,13 +43,20 @@ subpackages:
   - range: py-versions
     name: py${{range.key}}-${{vars.pypi-package}}
     description: python${{range.key}} version of ${{vars.pypi-package}}
+    dependencies:
+      - py${{range.key}}-jupyter-collaboration  # Need to build
+      - py${{range.key}}-jupyter-server
+      - py${{range.key}}-jupyter-ydoc           # Need to build
+      - py${{range.key}}-jupyterlab
+      - py${{range.key}}-pycrdt                 # Need to build
     pipeline:
-      - runs: apk add py${{range.key}}-jupyterlab-bin
+      - runs: apk add py${{range.key}}-jupyterlab-bin py${{range.key}}-jupyter-core-bin
       - uses: py/pip-build-install
         working-directory: python/jupyterlab-chat
         with:
+          needs-exe-named-python3: true
           python: python${{range.key}}
-      - runs: apk del py${{range.key}}-jupyterlab-bin
+      - runs: apk del py${{range.key}}-jupyterlab-bin py${{range.key}}-jupyter-core-bin
       - uses: strip
     test:
       pipeline:
