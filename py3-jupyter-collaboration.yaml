@@ -1,0 +1,122 @@
+package:
+  name: py3-jupyter-collaboration
+  version: 4.0.1
+  epoch: 0
+  description: A meta-package for - jupyter-collaboration-ui, jupyter-docprovider, jupyter-server-ydoc
+  annotations:
+    cgr.dev/ecosystem: python
+  copyright:
+    - license: BSD-3-Clause
+  dependencies:
+    provider-priority: 0
+
+vars:
+  pypi-package: jupyter-collaboration
+  import: jupyter_collaboration
+
+data:
+  - name: py-versions
+    items:
+      3.10: '310'
+      3.11: '311'
+      3.12: '312'
+      3.13: '313'
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - make
+      - posix-libc-utils
+      - py3-supported-build-base
+      - py3-supported-hatch-jupyter-builder
+      - py3-supported-hatchling
+
+pipeline:
+  - uses: git-checkout
+    with:
+      expected-commit: 6dc3d2792cfcdc317f453f3b41ba04544f002483
+      repository: https://github.com/jupyterlab/jupyter-collaboration
+      tag: v${{package.version}}
+
+subpackages:
+  # - range: py-versions
+  #   name: py${{range.key}}-${{vars.pypi-package}}
+  #   description: python${{range.key}} version of ${{vars.pypi-package}}
+  #   dependencies:
+  #     runtime:
+  #       - py${{range.key}}-docprovider              # Need to build
+  #       - py${{range.key}}-jupyter-collaboration-ui
+  #       - py${{range.key}}-jupyter-server-ydoc      # Need to build
+  #       - py${{range.key}}-jupyterlab
+  #   pipeline:
+  #     - uses: py/pip-build-install
+  #       working-directory: projects/jupyter-collaboration
+  #       with:
+  #         python: python${{range.key}}
+  #     - uses: strip
+  #   test:
+  #     pipeline:
+  #       - uses: python/import
+  #         with:
+  #           python: python${{range.key}}
+  #           import: ${{vars.import}}
+
+  # - range: py-versions
+  #   name: py${{range.key}}-${{vars.pypi-package}}-ui
+  #   description: python${{range.key}} version of ${{vars.pypi-package}}
+  #   pipeline:
+  #     - runs: apk add py${{range.key}}-jupyter-core-bin py${{range.key}}-jupyterlab-bin
+  #     - uses: py/pip-build-install
+  #       working-directory: projects/jupyter-collaboration-ui
+  #       with:
+  #         needs-exe-named-python3: true
+  #         python: python${{range.key}}
+  #     - runs: apk del py${{range.key}}-jupyter-core-bin py${{range.key}}-jupyterlab-bin
+  #     - uses: strip
+  #   test:
+  #     pipeline:
+  #       - uses: python/import
+  #         with:
+  #           python: python${{range.key}}
+  #           import: ${{vars.import}}_ui
+
+  - range: py-versions
+    name: py${{range.key}}-jupyter-docprovider
+    description: python${{range.key}} version of ${{vars.pypi-package}}
+    dependencies:
+      runtime:
+    pipeline:
+      - runs: apk add py${{range.key}}-jupyter-core-bin py${{range.key}}-jupyterlab-bin
+      - uses: py/pip-build-install
+        working-directory: projects/jupyter-docprovider
+        with:
+          needs-exe-named-python3: true
+          python: python${{range.key}}
+      - runs: apk del py${{range.key}}-jupyter-core-bin py${{range.key}}-jupyterlab-bin
+      - uses: strip
+    test:
+      pipeline:
+        - uses: python/import
+          with:
+            python: python${{range.key}}
+            import: jupyter_docprovider
+
+  - name: py3-supported-${{vars.pypi-package}}
+    description: meta package providing ${{vars.pypi-package}} for supported python versions.
+    dependencies:
+      runtime:
+        - py3.10-${{vars.pypi-package}}
+        - py3.11-${{vars.pypi-package}}
+        - py3.12-${{vars.pypi-package}}
+        - py3.13-${{vars.pypi-package}}
+
+update:
+  enabled: true
+  ignore-regex-patterns:
+    - rc[0-9]+$
+    - "[a-z]+[0-9]+$"
+  github:
+    identifier: jupyterlab/jupyter-collaboration
+    strip-prefix: v
+    tag-filter: v
