@@ -45,7 +45,7 @@ subpackages:
   #   description: python${{range.key}} version of ${{vars.pypi-package}}
   #   dependencies:
   #     runtime:
-  #       - py${{range.key}}-docprovider              # Need to build
+  #       - py${{range.key}}-docprovider
   #       - py${{range.key}}-jupyter-collaboration-ui
   #       - py${{range.key}}-jupyter-server-ydoc      # Need to build
   #       - py${{range.key}}-jupyterlab
@@ -81,26 +81,49 @@ subpackages:
   #           python: python${{range.key}}
   #           import: ${{vars.import}}_ui
 
+  # - range: py-versions
+  #   name: py${{range.key}}-jupyter-docprovider
+  #   description: python${{range.key}} version of ${{vars.pypi-package}}
+  #   pipeline:
+  #     - runs: apk add py${{range.key}}-jupyter-core-bin py${{range.key}}-jupyterlab-bin
+  #     - uses: py/pip-build-install
+  #       working-directory: projects/jupyter-docprovider
+  #       with:
+  #         needs-exe-named-python3: true
+  #         python: python${{range.key}}
+  #     - runs: apk del py${{range.key}}-jupyter-core-bin py${{range.key}}-jupyterlab-bin
+  #     - uses: strip
+  #   test:
+  #     pipeline:
+  #       - uses: python/import
+  #         with:
+  #           python: python${{range.key}}
+  #           import: jupyter_docprovider
+
   - range: py-versions
-    name: py${{range.key}}-jupyter-docprovider
+    name: py${{range.key}}-jupyter-server-ydoc
     description: python${{range.key}} version of ${{vars.pypi-package}}
     dependencies:
       runtime:
+        - py${{range.key}}-jupyter-events
+        - py${{range.key}}-jupyter-server
+        - py${{range.key}}-jupyter-server-fileid  # Need to build
+        - py${{range.key}}-jupyter-ydoc           # Need to build
+        - py${{range.key}}-jsonschema             # Need to build
+        - py${{range.key}}-pycrdt
+        - py${{range.key}}-pycrdt-websocket       # Need to build
     pipeline:
-      - runs: apk add py${{range.key}}-jupyter-core-bin py${{range.key}}-jupyterlab-bin
       - uses: py/pip-build-install
-        working-directory: projects/jupyter-docprovider
+        working-directory: projects/jupyter-server-ydoc
         with:
-          needs-exe-named-python3: true
           python: python${{range.key}}
-      - runs: apk del py${{range.key}}-jupyter-core-bin py${{range.key}}-jupyterlab-bin
       - uses: strip
     test:
       pipeline:
         - uses: python/import
           with:
             python: python${{range.key}}
-            import: jupyter_docprovider
+            import: jupyter_server_ydoc
 
   - name: py3-supported-${{vars.pypi-package}}
     description: meta package providing ${{vars.pypi-package}} for supported python versions.
