@@ -1,6 +1,6 @@
 package:
   name: teleport
-  version: "17.4.2"
+  version: "17.4.4"
   epoch: 0
   description: The easiest, and most secure way to access and protect all of your infrastructure.
   copyright:
@@ -36,8 +36,31 @@ pipeline:
   - uses: git-checkout
     with:
       repository: https://github.com/gravitational/teleport
-      expected-commit: cd8f06a65af084fb74982d4a64a679add7a7f08f
+      expected-commit: 5bca9f408ced1fc45de1080f61d6a7f24feffd45
       tag: v${{package.version}}
+
+  - uses: go/bump
+    with:
+      deps: |-
+        helm.sh/helm/v3@v3.17.3
+      modroot: integrations/event-handler
+
+  - uses: go/bump
+    with:
+      deps: |-
+        helm.sh/helm/v3@v3.17.3
+      modroot: integrations/terraform
+
+  - uses: go/bump
+    with:
+      deps: |-
+        helm.sh/helm/v3@v3.17.3
+      modroot: build.assets/tooling
+
+  - uses: go/bump
+    with:
+      deps: |-
+        helm.sh/helm/v3@v3.17.3
 
   # Fixes build failure introduced with 17.0.5 version:
   # "([wasm-validator error in function fastpathprocessor_process\20externref\20shim]
