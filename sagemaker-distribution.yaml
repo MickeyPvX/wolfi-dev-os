@@ -20,7 +20,7 @@ environment:
   contents:
     packages:
       - busybox
-      - conda
+      - py3.11-conda-bin
 
 pipeline:
   - uses: git-checkout
@@ -28,6 +28,10 @@ pipeline:
       repository: https://github.com/aws/sagemaker-distribution
       tag: ${{package.version}}-cpu
       expected-commit: db4c61c113482edf37b938e03e6b94e6cad2d112
+  
+  - uses: patch
+    with:
+      patches: cpu.env.out.patch
   
   - runs: conda init
     working-directory: build_artifacts/v${{vars.maj_version}}/v${{vars.maj_min_version}}/v${{package.version}}
