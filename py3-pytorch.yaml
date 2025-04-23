@@ -1,0 +1,77 @@
+package:
+  name: py3-pytorch
+  version: 2.7.0
+  epoch: 0
+  description: A high-throughput and memory-efficient inference and serving engine for LLMs
+  annotations:
+    cgr.dev/ecosystem: python
+  copyright:
+    - license: Apache-2.0
+  dependencies:
+    provider-priority: 0
+
+vars:
+  pypi-package: vllm
+
+data:
+  - name: py-versions
+    items:
+      3.10: '310'
+      3.11: '311'
+      3.12: '312'
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - cmake
+      - ldd-check
+      - py3-supported-astunparse
+      - py3-supported-build-base-dev
+      - py3-supported-numpy
+      - py3-supported-pybind11
+      - py3-supported-pyyaml
+      - py3-supported-typing-extensions
+      - py3-supported-requests
+      - samurai
+
+pipeline:
+  - uses: git-checkout
+    with:
+      expected-commit: 134179474539648ba7dee1317959529fbd0e7f89
+      recurse-submodules: true
+      repository: https://github.com/pytorch/pytorch
+      tag: v${{package.version}}
+
+subpackages:
+  - range: py-versions
+    name: py${{range.key}}-${{vars.pypi-package}}
+    description: python${{range.key}} version of ${{vars.pypi-package}}
+    pipeline:
+      - uses: py/pip-build-install
+        with:
+          needs-exe-named-python3: true
+          python: python${{range.key}}
+      - uses: strip
+    test:
+      pipeline:
+        - uses: python/import
+          with:
+            python: python${{range.key}}
+            import: ${{vars.pypi-package}}
+
+  - name: py3-supported-${{vars.pypi-package}}
+    description: meta package providing ${{vars.pypi-package}} for supported python versions.
+    dependencies:
+      runtime:
+        - py3.10-${{vars.pypi-package}}
+        - py3.11-${{vars.pypi-package}}
+        - py3.12-${{vars.pypi-package}}
+        - py3.13-${{vars.pypi-package}}
+
+update:
+  enabled: true
+  github:
+    identifier: pytorch/pytorch
+    strip-prefix: v
+    tag-filter: v

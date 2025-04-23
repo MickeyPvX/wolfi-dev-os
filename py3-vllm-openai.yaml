@@ -1,0 +1,52 @@
+package:
+  name: py3-vllm
+  version: 0.8.4
+  epoch: 0
+  description: A high-throughput and memory-efficient inference and serving engine for LLMs
+  annotations:
+    cgr.dev/ecosystem: python
+  copyright:
+    - license: Apache-2.0
+  dependencies:
+    provider-priority: 0
+
+vars:
+  pypi-package: vllm
+
+data:
+  - name: py-versions
+    items:
+      3.10: '310'
+      3.11: '311'
+      3.12: '312'
+
+environment:
+  contents:
+    packages:
+      - cmake
+      - py3-supported-setuptools-scm
+      - py3-supported-build-base
+      - samurai
+
+pipeline:
+  - uses: git-checkout
+    with:
+      expected-commit: dc1b4a6f1300003ae27f033afbdff5e2683721ce
+      repository: https://github.com/vllm-project/vllm
+      tag: v${{package.version}}
+
+subpackages:
+  - range: py-versions
+    name: py${{range.key}}-${{vars.pypi-package}}
+    description: python${{range.key}} version of ${{vars.pypi-package}}
+    pipeline:
+      - uses: py/pip-build-install
+        with:
+          python: python${{range.key}}
+      - uses: strip
+    test:
+      pipeline:
+        - uses: python/import
+          with:
+            python: python${{range.key}}
+            import: ${{vars.pypi-package}}
