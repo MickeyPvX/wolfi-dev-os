@@ -1,0 +1,75 @@
+package:
+  name: py3-typer
+  version: 0.15.2
+  epoch: 0
+  description: Typer, build great CLIs. Easy to code. Based on Python type hints.
+  annotations:
+    cgr.dev/ecosystem: python
+  copyright:
+    - license: MIT
+  dependencies:
+    provider-priority: 0
+
+vars:
+  pypi-package: typer
+
+data:
+  - name: py-versions
+    items:
+      3.10: '310'
+      3.11: '311'
+      3.12: '312'
+      3.13: '313'
+
+environment:
+  contents:
+    packages:
+      - py3-supported-build-base
+      - py3-supported-pdm-backend
+
+pipeline:
+  - uses: git-checkout
+    with:
+      expected-commit: 5474f0be4ef3dbd845d9eb6541a563861c9e31e4
+      repository: https://github.com/fastapi/typer
+      tag: ${{package.version}}
+
+subpackages:
+  - range: py-versions
+    name: py${{range.key}}-${{vars.pypi-package}}
+    description: python${{range.key}} version of ${{vars.pypi-package}}
+    dependencies:
+      runtime:
+        - py${{range.key}}-click
+        - py${{range.key}}-typing-extensions
+    pipeline:
+      - uses: py/pip-build-install
+        with:
+          python: python${{range.key}}
+      - uses: strip
+    test:
+      pipeline:
+        - uses: python/import
+          with:
+            python: python${{range.key}}
+            import: ${{vars.pypi-package}}
+        - name: Test basic functionality
+          runs: |
+            typer test.py run World | grep "Hello, World!"
+
+            python${{range.key}} test.py Linky | grep "Hello, Linky!"
+
+  - name: py3-supported-${{vars.pypi-package}}
+    description: meta package providing ${{vars.pypi-package}} for supported python versions.
+    dependencies:
+      runtime:
+        - py3.10-${{vars.pypi-package}}
+        - py3.11-${{vars.pypi-package}}
+        - py3.12-${{vars.pypi-package}}
+        - py3.13-${{vars.pypi-package}}
+
+update:
+  enabled: true
+  github:
+    identifier: fastapi/typer
+    use-tag: true

@@ -1,0 +1,72 @@
+package:
+  name: py3-open-webui
+  version: 0.6.5
+  epoch: 0
+  description: User-friendly AI Interface (Supports Ollama, OpenAI API, ...)
+  annotations:
+    cgr.dev/ecosystem: python
+  copyright:
+    - license: BSD-3-Clause
+  dependencies:
+    provider-priority: 0
+
+vars:
+  pypi-package: open-webui
+  import: open_webui
+
+data:
+  # Package Python version requirements are 'requires-python = ">= 3.11, < 3.13.0a1"' as of v0.6.5
+  - name: py-versions
+    items:
+      3.11: '311'
+      3.12: '312'
+
+environment:
+  contents:
+    packages:
+      - nodejs-22 # Does not support nodejs > 22
+      - npm
+      - py3-supported-build-base
+      - py3-supported-hatchling
+
+pipeline:
+  - uses: git-checkout
+    with:
+      expected-commit: 07d8460126a686de9a99e2662d06106e22c3f6b6
+      repository: https://github.com/open-webui/open-webui
+      tag: v${{package.version}}
+
+subpackages:
+  - range: py-versions
+    name: py${{range.key}}-${{vars.pypi-package}}
+    description: python${{range.key}} version of ${{vars.pypi-package}}
+    dependencies:
+      runtime:
+        - py${{range.key}}-typer
+    pipeline:
+      - uses: py/pip-build-install
+        with:
+          python: python${{range.key}}
+      - uses: strip
+    test:
+      pipeline:
+        - uses: python/import
+          with:
+            python: python${{range.key}}
+            import: ${{vars.import}}
+
+  - name: py3-supported-${{vars.pypi-package}}
+    description: meta package providing ${{vars.pypi-package}} for supported python versions.
+    dependencies:
+      runtime:
+        - py3.10-${{vars.pypi-package}}
+        - py3.11-${{vars.pypi-package}}
+        - py3.12-${{vars.pypi-package}}
+        - py3.13-${{vars.pypi-package}}
+
+update:
+  enabled: true
+  github:
+    identifier: open-webui/open-webui
+    strip-prefix: v
+    tag-filter: v
