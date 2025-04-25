@@ -1,49 +1,45 @@
 package:
-  name: py3-open-webui
-  version: 0.6.5
+  name: py3-httptools
+  version: 0.6.4
   epoch: 0
-  description: User-friendly AI Interface (Supports Ollama, OpenAI API, ...)
+  description: Python binding for the nodejs HTTP parser
   annotations:
     cgr.dev/ecosystem: python
   copyright:
-    - license: BSD-3-Clause
+    - license: MIT
   dependencies:
     provider-priority: 0
 
 vars:
-  pypi-package: open-webui
-  import: open_webui
+  pypi-package: httptools
 
 data:
-  # Package Python version requirements are 'requires-python = ">= 3.11, < 3.13.0a1"' as of v0.6.5
   - name: py-versions
     items:
+      3.10: '310'
       3.11: '311'
       3.12: '312'
+      3.13: '313'
 
 environment:
   contents:
     packages:
-      - nodejs-22 # Does not support nodejs > 22
-      - npm
-      - py3-supported-build-base
-      - py3-supported-hatchling
+      - build-base
+      - llhttp-dev
+      - py3-supported-build-base-dev
 
 pipeline:
   - uses: git-checkout
     with:
-      expected-commit: 07d8460126a686de9a99e2662d06106e22c3f6b6
-      repository: https://github.com/open-webui/open-webui
+      expected-commit: e265ae033d3d7212f92a614963a349e315f82df3
+      recurse-submodules: true
+      repository: https://github.com/MagicStack/httptools
       tag: v${{package.version}}
 
 subpackages:
   - range: py-versions
     name: py${{range.key}}-${{vars.pypi-package}}
     description: python${{range.key}} version of ${{vars.pypi-package}}
-    dependencies:
-      runtime:
-        - py${{range.key}}-typer
-        - py${{range.key}}-uvicorn
     pipeline:
       - uses: py/pip-build-install
         with:
@@ -54,7 +50,7 @@ subpackages:
         - uses: python/import
           with:
             python: python${{range.key}}
-            import: ${{vars.import}}
+            import: ${{vars.pypi-package}}
 
   - name: py3-supported-${{vars.pypi-package}}
     description: meta package providing ${{vars.pypi-package}} for supported python versions.
@@ -68,6 +64,6 @@ subpackages:
 update:
   enabled: true
   github:
-    identifier: open-webui/open-webui
+    identifier: MagicStack/httptools
     strip-prefix: v
     tag-filter: v

@@ -1,0 +1,102 @@
+package:
+  name: py3-watchfiles
+  version: 1.0.5
+  epoch: 0
+  description: Simple, modern and fast file watching and code reload in Python.
+  annotations:
+    cgr.dev/ecosystem: python
+  copyright:
+    - license: MIT
+  dependencies:
+    provider-priority: 0
+
+vars:
+  pypi-package: watchfiles
+
+data:
+  - name: py-versions
+    items:
+      3.10: '310'
+      3.11: '311'
+      3.12: '312'
+      3.13: '313'
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - maturin
+      - py3-supported-build-base
+      - py3-supported-maturin
+      - rust
+
+pipeline:
+  - uses: git-checkout
+    with:
+      expected-commit: 85997ddabae50f9c6eac1caac76fcbc08feff4dc
+      repository: https://github.com/samuelcolvin/watchfiles
+      tag: v${{package.version}}
+
+subpackages:
+  - range: py-versions
+    name: py${{range.key}}-${{vars.pypi-package}}
+    description: python${{range.key}} version of ${{vars.pypi-package}}
+    dependencies:
+      runtime:
+        - py${{range.key}}-anyio
+    pipeline:
+      - uses: py/pip-build-install
+        with:
+          python: python${{range.key}}
+      - name: "move usr/bin executables for -bin"
+        runs: |
+          mkdir -p ./cleanup/${{range.key}}/
+          mv ${{targets.contextdir}}/usr/bin ./cleanup/${{range.key}}/
+      - uses: strip
+    test:
+      pipeline:
+        - uses: python/import
+          with:
+            python: python${{range.key}}
+            import: ${{vars.pypi-package}}
+        - name: Test basic functionality
+          runs: python${{range.key}} test.py
+  
+  - range: py-versions
+    name: py${{range.key}}-${{vars.pypi-package}}-bin
+    description: Executable binaries for ${{vars.pypi-package}} installed for python${{range.key}}
+    dependencies:
+      runtime:
+        - py${{range.key}}-${{vars.pypi-package}}
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.contextdir}}/usr/
+          mv ./cleanup/${{range.key}}/bin ${{targets.contextdir}}/usr/
+    test:
+      pipeline:
+        - runs: |
+            watchfiles --help
+
+  - name: py3-supported-${{vars.pypi-package}}
+    description: meta package providing ${{vars.pypi-package}} for supported python versions.
+    dependencies:
+      runtime:
+        - py3.10-${{vars.pypi-package}}
+        - py3.11-${{vars.pypi-package}}
+        - py3.12-${{vars.pypi-package}}
+        - py3.13-${{vars.pypi-package}}
+    test:
+      pipeline:
+        - uses: python/import
+          with:
+            python: python3.13
+            import: ${{vars.pypi-package}}
+
+update:
+  enabled: true
+  ignore-regex-patterns:
+    - "[a-z]+[0-9]+$"
+  github:
+    identifier: samuelcolvin/watchfiles
+    strip-prefix: v
+    tag-filter: v

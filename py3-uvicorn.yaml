@@ -1,0 +1,151 @@
+package:
+  name: py3-uvicorn
+  version: 0.34.2
+  epoch: 0
+  description: An ASGI web server, for Python.
+  annotations:
+    cgr.dev/ecosystem: python
+  copyright:
+    - license: BSD-3-Clause
+  dependencies:
+    provider-priority: 0
+
+vars:
+  pypi-package: uvicorn
+
+data:
+  - name: py-build-versions
+    items:
+      3.11: '311'
+      3.12: '312'
+      3.13: '313'
+  - name: py-all-versions
+    items:
+      3.10: '310'
+      3.11: '311'
+      3.12: '312'
+      3.13: '313'
+
+environment:
+  contents:
+    packages:
+      - py3-supported-build-base
+      - py3-supported-hatchling
+
+pipeline:
+  - uses: git-checkout
+    with:
+      expected-commit: bdf95fd3e71f5f904dc6f7f1194a5fe23d1c3f2f
+      repository: https://github.com/encode/uvicorn
+      tag: ${{package.version}}
+
+subpackages:
+  # For python < 3.11 add the typing-extensions dependency
+  - name: py3.10-${{vars.pypi-package}}
+    description: python3.10 version of ${{vars.pypi-package}}
+    dependencies:
+      runtime:
+        - py3.10-click
+        - py3.10-h11
+        - py3.10-typing-extensions
+    pipeline:
+      - uses: py/pip-build-install
+        with:
+          python: python3.10
+      - name: "move usr/bin executables for -bin"
+        runs: |
+          mkdir -p ./cleanup/3.10/
+          mv ${{targets.contextdir}}/usr/bin ./cleanup/3.10/
+      - uses: strip
+    test:
+      pipeline:
+        - uses: python/import
+          with:
+            python: python3.10
+            import: ${{vars.pypi-package}}
+
+  - range: py-build-versions
+    name: py${{range.key}}-${{vars.pypi-package}}
+    description: python${{range.key}} version of ${{vars.pypi-package}}
+    dependencies:
+      runtime:
+        - py${{range.key}}-click
+        - py${{range.key}}-h11
+    pipeline:
+      - uses: py/pip-build-install
+        with:
+          python: python${{range.key}}
+      - name: "move usr/bin executables for -bin"
+        runs: |
+          mkdir -p ./cleanup/${{range.key}}/
+          mv ${{targets.contextdir}}/usr/bin ./cleanup/${{range.key}}/
+      - uses: strip
+    test:
+      pipeline:
+        - uses: python/import
+          with:
+            python: python${{range.key}}
+            import: ${{vars.pypi-package}}
+
+  - range: py-all-versions
+    name: py${{range.key}}-${{vars.pypi-package}}-standard
+    description: python${{range.key}} version of ${{vars.pypi-package}}
+    dependencies:
+      runtime:
+        - py${{range.key}}-${{vars.pypi-package}}
+        - py${{range.key}}-httptools
+        - py${{range.key}}-python-dotenv
+        - py${{range.key}}-pyyaml
+        - py${{range.key}}-uvloop
+        - py${{range.key}}-watchfiles
+        - py${{range.key}}-websockets
+    test:
+      pipeline:
+        - uses: python/import
+          with:
+            python: python${{range.key}}
+            import: ${{vars.pypi-package}}
+  
+  - range: py-all-versions
+    name: py${{range.key}}-${{vars.pypi-package}}-bin
+    description: Executable binaries for ${{vars.pypi-package}} installed for python${{range.key}}
+    dependencies:
+      runtime:
+        - py${{range.key}}-${{vars.pypi-package}}
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.contextdir}}/usr/
+          mv ./cleanup/${{range.key}}/bin ${{targets.contextdir}}/usr/
+    test:
+      environment:
+        contents:
+          packages:
+            - py${{range.key}}-${{vars.pypi-package}}-standard
+      pipeline:
+        - runs: uvicorn --version | grep ${{package.version}}
+        - name: Start uvicorn server
+          uses: test/daemon-check-output
+          with:
+            start: uvicorn test:app
+            timeout: 30
+            expected_output: |
+              Started server process
+              Application startup complete
+              Uvicorn running on http://127.0.0.1:8000
+
+  - name: py3-supported-${{vars.pypi-package}}
+    description: meta package providing ${{vars.pypi-package}} for supported python versions.
+    dependencies:
+      runtime:
+        - py3.10-${{vars.pypi-package}}
+        - py3.11-${{vars.pypi-package}}
+        - py3.12-${{vars.pypi-package}}
+        - py3.13-${{vars.pypi-package}}
+
+update:
+  enabled: true
+  ignore-regex-patterns:
+    - \.post[0-9]+$
+  github:
+    identifier: encode/uvicorn
+    use-tag: true
